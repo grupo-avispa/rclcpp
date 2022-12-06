@@ -587,6 +587,90 @@ Executor::execute_subscription(rclcpp::SubscriptionBase::SharedPtr subscription)
   rclcpp::MessageInfo message_info;
   message_info.get_rmw_message_info().from_intra_process = false;
 
+  // PROPOSED
+  if (subscription->use_runtime_type()) {
+    // Get dynamic type
+    void * dyn_type = subscription->get_dynamic_type();
+
+    get_dynamic_type() {
+      // TODO(methylDragon): Cache types by some pair of (gid, topic_name)?
+      // TODO(methylDragon): Then populate and retrieve from cache as necessary
+
+      // If cache fails, first attempt to obtain dynamic type from rmw
+      rcl_get_dynamic_type_from_rmw() rmw_get_dynamic_type
+
+      // Then, if that fails, attempt to obtain it from the publisher by calling the type
+      // description service
+      // TODO(methylDragon): Replace type_description_t with the TypeDescription meta message
+      // DO NOT USE THIS. Remote type description getting should be OUTSIDE in userland
+      // type_description_t type_description = subscription->get_remote_type_description();
+
+      // If cache fails, first attempt to obtain dynamic type from rmw
+
+
+      // NOTE(methylDragon): Should we attempt to obtain the type locally???
+      //                     How do I even do that (I think I'll need to trawl through the
+      //                     install space for message files?)
+
+      auto evolving_type = eprosima::fastrtps::types::DynamicType_ptr(
+        std::move(
+          *reinterpret_cast<eprosima::fastrtps::types::DynamicType_ptr *>(
+            ser_construct_type_from_description(ser, full_description_struct)
+          )
+        )
+      );
+    }
+
+    // This is the case where a copy of the serialized message is taken from
+    // the middleware via inter-process communication.
+    std::shared_ptr<SerializedMessage> serialized_msg = subscription->create_serialized_message();
+    take_and_do_error_handling(
+      "taking a serialized message from topic",
+      subscription->get_topic_name(),
+      [&]() {return subscription->take_serialized(*serialized_msg.get(), message_info);},
+      [&]()
+      {
+        subscription->handle_serialized_message(serialized_msg, message_info);
+      });
+    subscription->return_serialized_message(serialized_msg);
+
+
+    // NOTE(methylDragon): Should this be here? This is more "automatic" than allowing a user to
+    //                     do it. But it lets us avoid having the user manage the lifecycle of
+    //                     the type support struct we inevitably need.
+
+    // NOTE: It seems like it's fine that this happens in rclcpp, as long as the user has the option
+    //       to do it on their own. (They can do it on their own by making a RuntimeTypeSubscription)
+    //       Or it can be a SubscriptionBase
+
+    // ==== Move this to init of the subscription
+    // Query internal map for dynamic type
+    // If not found, query server or >>local<< for message description and populate map with dynamic
+    // type
+    // - DynamicType construction can be in rcl?
+    // If not found, error out
+    //
+    // THEN call rcl_create_subscription (it never calls the service, the service is called BEFORE)
+    // ====
+
+    rmw_get_dynamic_type_support() >> rclcpp::DynamicData(dynamic_type)
+    rmw_get_preferred_serialization_plugin() >> rclcpp::DynamicData(dynamic_type)  // Or this
+    or rmw_take_dynamic_data // Then we can use the middleware's own dynamicdata/dynamictype?
+
+    // or rmw_get_dynamic_type(sub, ) -> dynamic_type (this is an optimization)
+
+    // Take serialized message
+    // Use dynamic type to interpret serialized message, constructing wrapper class (can be rcl):
+    // - rcl::DynamicData
+
+    // subscription->handle_runtime_type_message(dynamic_data, message_info);
+
+    // On the user side:
+    // Callback signature: std::function<void(std::shared_ptr<rcl::DynamicData>)> callback
+    // Where the user can then use the DynamicData to list and access fields
+    return;
+  }
+
   if (subscription->is_serialized()) {
     // This is the case where a copy of the serialized message is taken from
     // the middleware via inter-process communication.

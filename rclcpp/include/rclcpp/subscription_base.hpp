@@ -86,7 +86,10 @@ public:
     const rcl_subscription_options_t & subscription_options,
     const SubscriptionEventCallbacks & event_callbacks,
     bool use_default_callbacks,
-    bool is_serialized = false);
+    bool is_serialized = false,
+    bool use_runtime_type = false,
+    rclcpp::node_interfaces::NodeGraphInterface * node_graph = 0,
+    rclcpp::node_interfaces::NodeServicesInterface * node_services = 0);
 
   /// Destructor.
   RCLCPP_PUBLIC
@@ -209,6 +212,23 @@ public:
   void
   handle_loaned_message(void * loaned_message, const rclcpp::MessageInfo & message_info) = 0;
 
+  /// Call the topic publisher's TypeDescription service to obtain the runtime type description
+  // NOTE(methylDragon): To be implemented in RuntimeTypeSubscription, where the user passes in
+  //                     the publisher node's name in addition to the topic name
+  RCLCPP_PUBLIC
+  virtual
+  type_description_t
+  get_remote_type_description() = 0;
+
+  RCLCPP_PUBLIC
+  virtual
+  void
+  handle_runtime_type_message(
+    const std::shared_ptr<rclcpp::SerializedMessage> & serialized_message,
+    const rclcpp::MessageInfo & message_info,
+    void * dynamic_type
+  ) = 0;
+
   /// Return the message borrowed in create_message.
   /** \param[in] message Shared pointer to the returned message. */
   RCLCPP_PUBLIC
@@ -234,6 +254,17 @@ public:
   RCLCPP_PUBLIC
   bool
   is_serialized() const;
+
+  /// Return if the subscription should use runtime type
+  /**
+   * This will cause the subscription to use the take_serialized and handle_runtime_type_message
+   * methods.
+   *
+   * \return `true` if the subscription should use runtime type, `false` otherwise
+   */
+  RCLCPP_PUBLIC
+  bool
+  use_runtime_type() const;
 
   /// Get matching publisher count.
   /** \return The number of publishers on this topic. */
@@ -564,6 +595,8 @@ protected:
   set_on_new_message_callback(rcl_event_callback_t callback, const void * user_data);
 
   rclcpp::node_interfaces::NodeBaseInterface * const node_base_;
+  rclcpp::node_interfaces::NodeGraphInterface * const node_graph_;
+  rclcpp::node_interfaces::NodeServicesInterface * const node_services_;
 
   std::shared_ptr<rcl_node_t> node_handle_;
   std::shared_ptr<rcl_subscription_t> subscription_handle_;
@@ -585,6 +618,7 @@ private:
 
   rosidl_message_type_support_t type_support_;
   bool is_serialized_;
+  bool use_runtime_type_;
 
   std::atomic<bool> subscription_in_use_by_wait_set_{false};
   std::atomic<bool> intra_process_subscription_waitable_in_use_by_wait_set_{false};

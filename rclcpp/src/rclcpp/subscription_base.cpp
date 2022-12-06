@@ -41,7 +41,10 @@ SubscriptionBase::SubscriptionBase(
   const rcl_subscription_options_t & subscription_options,
   const SubscriptionEventCallbacks & event_callbacks,
   bool use_default_callbacks,
-  bool is_serialized)
+  bool is_serialized,
+  bool use_runtime_type,
+  rclcpp::node_interfaces::NodeGraphInterface * node_graph,
+  rclcpp::node_interfaces::NodeServicesInterface * node_services)
 : node_base_(node_base),
   node_handle_(node_base_->get_shared_rcl_node_handle()),
   node_logger_(rclcpp::get_node_logger(node_handle_.get())),
@@ -49,7 +52,10 @@ SubscriptionBase::SubscriptionBase(
   intra_process_subscription_id_(0),
   event_callbacks_(event_callbacks),
   type_support_(type_support_handle),
-  is_serialized_(is_serialized)
+  is_serialized_(is_serialized),
+  use_runtime_type_(use_runtime_type),
+  node_graph_(node_graph),
+  node_services_(node_services)
 {
   auto custom_deletor = [node_handle = this->node_handle_](rcl_subscription_t * rcl_subs)
     {
@@ -223,6 +229,14 @@ SubscriptionBase::take_serialized(
   return true;
 }
 
+type_description_t
+get_remote_type_description()
+{
+  // TODO(methylDragon): Some mumbo jumbo to get the name of the publisher's node
+  //                     Then use that to get the service endpoint
+}
+
+
 const rosidl_message_type_support_t &
 SubscriptionBase::get_message_type_support_handle() const
 {
@@ -233,6 +247,12 @@ bool
 SubscriptionBase::is_serialized() const
 {
   return is_serialized_;
+}
+
+bool
+SubscriptionBase::use_runtime_type() const
+{
+  return use_runtime_type_;
 }
 
 size_t
