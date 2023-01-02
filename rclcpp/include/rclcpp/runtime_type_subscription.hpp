@@ -47,48 +47,56 @@ public:
   // cppcheck-suppress unknownMacro
   RCLCPP_SMART_PTR_DEFINITIONS(RuntimeTypeSubscription)
 
-  /// Constructor.
-  /**
-   * In order to properly subscribe to a topic, this subscription needs to be added to
-   * the node_topic_interface of the node passed into this constructor.
-   *
-   * \sa rclcpp::Node::create_generic_subscription() or rclcpp::create_generic_subscription() for
-   * creating an instance of this class and adding it to the node_topic_interface.
-   *
-   * \param node_base Pointer to parent node's NodeBaseInterface
-   * \param ts_lib Type support library, needs to correspond to topic_type
-   * \param topic_name Topic name
-   * \param topic_type Topic type
-   * \param qos %QoS settings
-   * \param callback Callback for new messages of serialized form
-   * \param options %Subscription options.
-   * Not all subscription options are currently respected, the only relevant options for this
-   * subscription are `event_callbacks`, `use_default_callbacks`, `ignore_local_publications`, and
-   * `%callback_group`.
-   */
   template<typename AllocatorT = std::allocator<void>>
   RuntimeTypeSubscription(
     rclcpp::node_interfaces::NodeBaseInterface * node_base,
-    // const std::shared_ptr<rcpputils::SharedLibrary> ts_lib,
+    const rosidl_message_type_support_t & type_support_handle,
     const std::string & topic_name,
-    const std::string & topic_type,
-    const std::string & publisher_node_name,
+    const std::string & topic_type,  // TODO(methylDragon): Use eventually?
+    // const std::string & publisher_node_name,
     const rclcpp::QoS & qos,
     // TODO(methylDragons): Eventually roll out an rclcpp::DynamicData that encompasses the ser
     //                      support and DynamicData, and pass that to the callback
-    std::function<void(std::shared_ptr<serialization_support_t *, void *>)> callback,
-    const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options)
+    std::function<void(std::shared_ptr<serialization_support_t *, ser_dynamic_data_t *>)> callback,
+    const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options,
+    const char * serialization_lib_name = nullptr)
   : SubscriptionBase(
       node_base,
-      *rclcpp::get_typesupport_handle(topic_type, "rosidl_typesupport_cpp", *ts_lib),
+      type_support_handle,
       topic_name,
       options.to_rcl_subscription_options(qos),
       options.event_callbacks,
       options.use_default_callbacks,
       false,
       true),
-    callback_(callback),
-    ts_lib_(ts_lib)
+    callback_(callback)
+  {}
+
+  /// Deferred type description constructor, only usable if the middleware implementation supports
+  /// type discovery
+  template<typename AllocatorT = std::allocator<void>>
+  RuntimeTypeSubscription(
+    rclcpp::node_interfaces::NodeBaseInterface * node_base,
+    const std::string & topic_name,
+    const std::string & topic_type,  // TODO(methylDragon): Use eventually?
+    const rclcpp::QoS & qos,
+    // TODO(methylDragons): Eventually roll out an rclcpp::DynamicData that encompasses the ser
+    //                      support and DynamicData, and pass that to the callback
+    std::function<void(std::shared_ptr<serialization_support_t *, ser_dynamic_data_t *>)> callback,
+    const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options,
+    const char * serialization_lib_name = nullptr)
+  : SubscriptionBase(
+      node_base,
+      // NOTE(methylDragon): Since the typesupport is deferred, it needs to be modified post-hoc
+      //                     which means it technically isn't const correct...
+      *rmw_get_runtime_type_message_typesupport_handle_with_deferred_desc(serialization_lib_name),
+      topic_name,
+      options.to_rcl_subscription_options(qos),
+      options.event_callbacks,
+      options.use_default_callbacks,
+      false,
+      true),
+    callback_(callback)
   {}
 
   RCLCPP_PUBLIC
@@ -139,10 +147,7 @@ public:
 
 private:
   RCLCPP_DISABLE_COPY(RuntimeTypeSubscription)
-
-  std::function<void(std::shared_ptr<rclcpp::SerializedMessage>)> callback_;
-  // The type support library should stay loaded, so it is stored in the RuntimeTypeSubscription
-  std::shared_ptr<rcpputils::SharedLibrary> ts_lib_;
+  std::function<void(std::shared_ptr<serialization_support_t *, ser_dynamic_data_t *>)> callback_;
 };
 
 }  // namespace rclcpp

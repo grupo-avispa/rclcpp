@@ -42,9 +42,7 @@ SubscriptionBase::SubscriptionBase(
   const SubscriptionEventCallbacks & event_callbacks,
   bool use_default_callbacks,
   bool is_serialized,
-  bool use_runtime_type,
-  rclcpp::node_interfaces::NodeGraphInterface * node_graph,
-  rclcpp::node_interfaces::NodeServicesInterface * node_services)
+  bool use_runtime_type)
 : node_base_(node_base),
   node_handle_(node_base_->get_shared_rcl_node_handle()),
   node_logger_(rclcpp::get_node_logger(node_handle_.get())),
@@ -53,9 +51,7 @@ SubscriptionBase::SubscriptionBase(
   event_callbacks_(event_callbacks),
   type_support_(type_support_handle),
   is_serialized_(is_serialized),
-  use_runtime_type_(use_runtime_type),
-  node_graph_(node_graph),
-  node_services_(node_services)
+  use_runtime_type_(use_runtime_type)
 {
   auto custom_deletor = [node_handle = this->node_handle_](rcl_subscription_t * rcl_subs)
     {

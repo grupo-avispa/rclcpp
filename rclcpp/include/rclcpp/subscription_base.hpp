@@ -87,9 +87,10 @@ public:
     const SubscriptionEventCallbacks & event_callbacks,
     bool use_default_callbacks,
     bool is_serialized = false,
-    bool use_runtime_type = false,
-    rclcpp::node_interfaces::NodeGraphInterface * node_graph = 0,
-    rclcpp::node_interfaces::NodeServicesInterface * node_services = 0);
+    bool use_runtime_type = false)
+    // TODO(methylDragon): If we don't need this, remove it,
+    // rclcpp::node_interfaces::NodeGraphInterface * node_graph = 0,
+    // rclcpp::node_interfaces::NodeServicesInterface * node_services = 0);
 
   /// Destructor.
   RCLCPP_PUBLIC
@@ -595,8 +596,10 @@ protected:
   set_on_new_message_callback(rcl_event_callback_t callback, const void * user_data);
 
   rclcpp::node_interfaces::NodeBaseInterface * const node_base_;
-  rclcpp::node_interfaces::NodeGraphInterface * const node_graph_;
-  rclcpp::node_interfaces::NodeServicesInterface * const node_services_;
+
+  // TODO(methylDragon): Remove if we don't need this
+  // rclcpp::node_interfaces::NodeGraphInterface * const node_graph_;
+  // rclcpp::node_interfaces::NodeServicesInterface * const node_services_;
 
   std::shared_ptr<rcl_node_t> node_handle_;
   std::shared_ptr<rcl_subscription_t> subscription_handle_;
