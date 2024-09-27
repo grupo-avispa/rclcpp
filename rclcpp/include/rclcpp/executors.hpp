@@ -19,7 +19,9 @@
 #include <memory>
 
 #include "rclcpp/executors/multi_threaded_executor.hpp"
+#include "rclcpp/executors/rt_multi_threaded_executor.hpp"
 #include "rclcpp/executors/single_threaded_executor.hpp"
+#include "rclcpp/executors/rt_single_threaded_executor.hpp"
 #include "rclcpp/executors/static_single_threaded_executor.hpp"
 #include "rclcpp/node.hpp"
 #include "rclcpp/utilities.hpp"
@@ -52,7 +54,9 @@ namespace executors
 {
 
 using rclcpp::executors::MultiThreadedExecutor;
+using rclcpp::executors::RTMultiThreadedExecutor;
 using rclcpp::executors::SingleThreadedExecutor;
+using rclcpp::executors::RTSingleThreadedExecutor;
 
 /// Spin (blocking) until the future is complete, it times out waiting, or rclcpp is interrupted.
 /**
