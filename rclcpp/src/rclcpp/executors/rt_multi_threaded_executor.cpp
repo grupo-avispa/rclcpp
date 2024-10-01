@@ -107,10 +107,10 @@ RTMultiThreadedExecutor::run(size_t this_thread_number)
     // Change the thread priority with sched_param
     sched_param param;
     param.sched_priority = priority_;
-    if (sched_setscheduler(getpid(), SCHED_FIFO, &param) == -1) {
-      RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "sched_setscheduler failed");
+    if (sched_setscheduler(gettid(), SCHED_FIFO, &param) == -1) {
+      RCLCPP_WARN_ONCE(rclcpp::get_logger("rclcpp"), "sched_setscheduler failed");
     }else{
-      RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Scheduler priority has been set to %d", priority_);
+      RCLCPP_WARN_ONCE(rclcpp::get_logger("rclcpp"), "Scheduler priority has been set to %d", priority_);
     }
     // Clear the callback_group to prevent the AnyExecutable destructor from
     // resetting the callback group `can_be_taken_from`

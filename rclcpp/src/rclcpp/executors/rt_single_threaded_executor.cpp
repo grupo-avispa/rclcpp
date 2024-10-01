@@ -49,7 +49,7 @@ RTSingleThreadedExecutor::spin()
     if (get_next_executable(any_executable)) {
       sched_param param;
       param.sched_priority = priority_;
-      sched_setscheduler(getpid(), SCHED_FIFO, &param);
+      sched_setscheduler(gettid(), SCHED_FIFO, &param);
       execute_any_executable(any_executable);
     }
   }
