@@ -18,7 +18,9 @@
 #include <functional>
 #include <memory>
 
-#include "rclcpp_components/node_factory.hpp"
+#include "rclcpp_components/node_factory_rt.hpp"
+
+#include "cactus_rt/tracing.h" // for tracing
 
 namespace rclcpp_components
 {
@@ -29,7 +31,7 @@ namespace rclcpp_components
  * components that implement a single-argument constructor and `get_node_base_interface`.
  */
 template<typename NodeT>
-class NodeFactoryTemplate : public NodeFactory
+class NodeFactoryTemplate : public NodeFactoryRT
 {
 public:
   NodeFactoryTemplate() = default;
@@ -40,10 +42,20 @@ public:
    * \param[in] options Additional options used in the construction of the component.
    */
   NodeInstanceWrapper
-  create_node_instance(const rclcpp::NodeOptions & options) override
+  create_node_instance(const rclcpp::NodeOptions & options, 
+                      std::shared_ptr<cactus_rt::tracing::ThreadTracer> tracer = nullptr) override
   {
-    auto node = std::make_shared<NodeT>(options);
-
+    // RCLCPP_INFO_ONCE(rclcpp::get_logger("rclcpp"), "Construyendo el nodo...");
+    std::shared_ptr<NodeT> node;
+    if (tracer != nullptr){
+      node = std::make_shared<NodeT>(options, tracer);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), 
+          "Tracer shared_ptr for %s was successfully set !!", node->get_name());
+    }else{
+      node = std::make_shared<NodeT>(options, nullptr);
+      RCLCPP_WARN(rclcpp::get_logger("rclcpp"), 
+          "Tracer shared_ptr for %s was NULL !!", node->get_name());
+    }
     return NodeInstanceWrapper(
       node, std::bind(&NodeT::get_node_base_interface, node));
   }

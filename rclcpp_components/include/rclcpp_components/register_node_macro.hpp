@@ -33,6 +33,6 @@
 #define RCLCPP_COMPONENTS_REGISTER_NODE(NodeClass) \
   CLASS_LOADER_REGISTER_CLASS( \
     rclcpp_components::NodeFactoryTemplate<NodeClass>, \
-    rclcpp_components::NodeFactory)
+    rclcpp_components::NodeFactoryRT)
 
 #endif  // RCLCPP_COMPONENTS__REGISTER_NODE_MACRO_HPP__

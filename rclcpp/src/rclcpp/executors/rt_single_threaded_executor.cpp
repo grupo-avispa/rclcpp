@@ -32,6 +32,8 @@ RTSingleThreadedExecutor::RTSingleThreadedExecutor(const rclcpp::ExecutorOptions
       rclcpp::get_logger("rclcpp"),
       "Scheduler priority must be a integer between 1 (lowest priority) and 99 (highest priority).\n"
       "Scheduler priority has been set to %d which is a safe value.", priority_);
+  }else{
+    RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Scheduler priority has been set to %d", priority_);
   }
 }
 
@@ -49,7 +51,7 @@ RTSingleThreadedExecutor::spin()
     if (get_next_executable(any_executable)) {
       sched_param param;
       param.sched_priority = priority_;
-      sched_setscheduler(gettid(), SCHED_FIFO, &param);
+      sched_setscheduler(getpid(), SCHED_FIFO, &param);
       execute_any_executable(any_executable);
     }
   }
