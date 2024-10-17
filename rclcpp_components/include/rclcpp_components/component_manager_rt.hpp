@@ -58,6 +58,9 @@
 #include "rclcpp_components/node_factory_rt.hpp"
 #include "rclcpp_components/visibility_control.hpp"
 
+#include "cactus_rt/tracing.h"
+#include "cactus_rt/utils.h"
+
 namespace class_loader
 {
 class ClassLoader;
@@ -270,6 +273,7 @@ protected:
   std::vector<std::string> tracing_node_names_;
   std::string trace_file_path_;
 
+  std::shared_ptr<cactus_rt::tracing::TraceAggregator> trace_aggregator_;
   rclcpp::Service<LoadNode>::SharedPtr loadNode_srv_;
   rclcpp::Service<UnloadNode>::SharedPtr unloadNode_srv_;
   rclcpp::Service<ListNodes>::SharedPtr listNodes_srv_;

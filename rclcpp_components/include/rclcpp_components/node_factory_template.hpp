@@ -43,9 +43,8 @@ public:
    */
   NodeInstanceWrapper
   create_node_instance(const rclcpp::NodeOptions & options, 
-                      std::shared_ptr<cactus_rt::tracing::ThreadTracer> tracer = nullptr) override
+                      std::shared_ptr<cactus_rt::tracing::ThreadTracer> tracer) override
   {
-    // RCLCPP_INFO_ONCE(rclcpp::get_logger("rclcpp"), "Construyendo el nodo...");
     std::shared_ptr<NodeT> node;
     if (tracer != nullptr){
       node = std::make_shared<NodeT>(options, tracer);

@@ -21,11 +21,6 @@ FetchContent_Declare(
     GIT_TAG        cce7512
 )
 FetchContent_MakeAvailable(cactus_rt)
-find_package(rt_tools REQUIRED)
-
-if(NOT rt_tools_FOUND)
-  message(FATAL_ERROR "\n\nrt_tools library not found\n\n")
-endif()
 
 include_directories(
   include
@@ -68,7 +63,6 @@ add_library(
 target_include_directories(component_manager_rt PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
-  ${CMAKE_INSTALL_PREFIX}/../rt_tools/include/rt_tools
 )
 ament_target_dependencies(component_manager_rt
   "ament_index_cpp"
@@ -76,7 +70,6 @@ ament_target_dependencies(component_manager_rt
   "composition_interfaces"
   "rclcpp"
   "rcpputils"
-  "rt_tools"
 )
 target_link_libraries(component_manager_rt
     cactus_rt
@@ -115,7 +108,6 @@ add_executable(
 target_link_libraries(component_container_rt component_manager_rt)
 ament_target_dependencies(component_container_rt
   "rclcpp"
-  "rt_tools"
 )
 
 add_executable(
@@ -125,7 +117,6 @@ add_executable(
 target_link_libraries(component_container_mt_rt component_manager_rt)
 ament_target_dependencies(component_container_mt_rt
   "rclcpp"
-  "rt_tools"
 )
 
 add_executable(

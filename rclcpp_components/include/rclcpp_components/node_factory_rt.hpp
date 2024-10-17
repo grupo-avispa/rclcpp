@@ -43,7 +43,7 @@ public:
   virtual
   NodeInstanceWrapper
   create_node_instance(const rclcpp::NodeOptions & options, 
-                      std::shared_ptr<cactus_rt::tracing::ThreadTracer> tracer = NULL) = 0;
+                      std::shared_ptr<cactus_rt::tracing::ThreadTracer> tracer) = 0;
 };
 }  // namespace rclcpp_components
 

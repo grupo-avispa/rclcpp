@@ -107,7 +107,7 @@ RTMultiThreadedExecutor::run(size_t this_thread_number)
     // Change the thread priority with sched_param
     sched_param param;
     param.sched_priority = priority_;
-    if (sched_setscheduler(getpid(), SCHED_FIFO, &param) == -1) {
+    if (sched_setscheduler(gettid(), SCHED_FIFO, &param) == -1) {
       RCLCPP_WARN_ONCE(rclcpp::get_logger("rclcpp"), "sched_setscheduler failed");
     }else{
       RCLCPP_WARN_ONCE(rclcpp::get_logger("rclcpp"), "Scheduler priority has been set to %d", priority_);
