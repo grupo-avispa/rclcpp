@@ -25,7 +25,6 @@
 #include "rcpputils/filesystem_helper.hpp"
 #include "rcpputils/split.hpp"
 
-#include "rt_tools/tracing_rt.hpp"
 using namespace std::placeholders;
 
 namespace rclcpp_components
@@ -74,7 +73,11 @@ ComponentManagerRT::~ComponentManagerRT()
       }
     }
   }
-  StopTracing();
+  // Strop Tracing
+  cactus_rt::tracing::DisableTracing();
+  trace_aggregator_->RequestStop();
+  trace_aggregator_->Join();
+  trace_aggregator_ = nullptr;
 }
 
 std::vector<ComponentManagerRT::ComponentResource>
@@ -202,8 +205,18 @@ ComponentManagerRT::set_trace_file_and_start_tracing()
       "Set the parameter in your launch file or use normal Component Manager for your composition");
       return;
   }
-    // Start tracing
-    StartTracing("tracing_rt_app", trace_file_path_.c_str());
+  // Enable the tracing.
+  cactus_rt::tracing::EnableTracing();
+
+  // Create the trace aggregator that will pop the queues and write the events to sinks.
+  trace_aggregator_ = std::make_shared<cactus_rt::tracing::TraceAggregator>("tracing_rt_app");
+
+  // Create the file sink so the data aggregated by the TraceAggregator will be written to somewhere.
+  auto file_sink = std::make_shared<cactus_rt::tracing::FileSink>(trace_file_path_.c_str());
+  trace_aggregator_->RegisterSink(file_sink);
+
+  quill::start();
+  trace_aggregator_->Start();
 }
 
 void
@@ -272,13 +285,13 @@ ComponentManagerRT::on_load_node(
           // Create trace
           auto tracer = std::make_shared<cactus_rt::tracing::ThreadTracer>(
               request->node_name.c_str());
+          // Register Tracer
+          trace_aggregator_->RegisterThreadTracer(tracer);
           // Create node
           node_wrappers_[node_id] = factory->create_node_instance(options, tracer);
-          // Register Tracer
-          RegisterThreadTracer(tracer);
         }else{
           // Create node
-          node_wrappers_[node_id] = factory->create_node_instance(options);
+          node_wrappers_[node_id] = factory->create_node_instance(options, nullptr);
         }
       } catch (const std::exception & ex) {
         // In the case that the component constructor throws an exception,
