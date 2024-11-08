@@ -19,6 +19,7 @@
   <build_depend>rcpputils</build_depend>
   <build_depend>rt_tools</build_depend>
   <build_depend>cactus_rt</build_depend>
+  <depend>backward_ros</depend>
 
   <exec_depend>ament_index_cpp</exec_depend>
   <exec_depend>class_loader</exec_depend>

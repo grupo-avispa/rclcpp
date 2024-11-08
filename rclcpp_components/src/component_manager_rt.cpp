@@ -73,6 +73,7 @@ ComponentManagerRT::~ComponentManagerRT()
       }
     }
   }
+  RCLCPP_WARN(get_logger(), "\n\nCALLING COMPONENT_MANAGER_RT DESTRUCTOR!!!\n\n");
   // Strop Tracing
   cactus_rt::tracing::DisableTracing();
   trace_aggregator_->RequestStop();
@@ -209,7 +210,7 @@ ComponentManagerRT::set_trace_file_and_start_tracing()
   cactus_rt::tracing::EnableTracing();
 
   // Create the trace aggregator that will pop the queues and write the events to sinks.
-  trace_aggregator_ = std::make_shared<cactus_rt::tracing::TraceAggregator>("tracing_rt_app");
+  trace_aggregator_ = std::make_unique<cactus_rt::tracing::TraceAggregator>("tracing_rt_app");
 
   // Create the file sink so the data aggregated by the TraceAggregator will be written to somewhere.
   auto file_sink = std::make_shared<cactus_rt::tracing::FileSink>(trace_file_path_.c_str());
@@ -225,6 +226,14 @@ ComponentManagerRT::set_executor(const std::weak_ptr<rclcpp::Executor> executor)
   executor_ = executor;
 }
 
+void ComponentManagerRT::stop_tracing(){
+  RCLCPP_WARN(get_logger(), "\n\nCALLING stop_tracing!!!\n\n");
+  // Strop Tracing
+  cactus_rt::tracing::DisableTracing();
+  trace_aggregator_->RequestStop();
+  trace_aggregator_->Join();
+  trace_aggregator_ = nullptr;
+}
 void
 ComponentManagerRT::add_node_to_executor(uint64_t node_id)
 {
@@ -278,21 +287,35 @@ ComponentManagerRT::on_load_node(
 
       try {
         // Search for nodes that use tracing
-        auto it = std::find(tracing_node_names_.begin(), 
-                            tracing_node_names_.end(), 
-                            request->node_name);
-        if(it != tracing_node_names_.end()){
+        // auto it = std::find(tracing_node_names_.begin(), 
+        //                     tracing_node_names_.end(), 
+        //                     request->node_name);
+        // if(it != tracing_node_names_.end()){
           // Create trace
-          auto tracer = std::make_shared<cactus_rt::tracing::ThreadTracer>(
-              request->node_name.c_str());
-          // Register Tracer
-          trace_aggregator_->RegisterThreadTracer(tracer);
-          // Create node
-          node_wrappers_[node_id] = factory->create_node_instance(options, tracer);
-        }else{
-          // Create node
-          node_wrappers_[node_id] = factory->create_node_instance(options, nullptr);
-        }
+        nodes_tracer_[request->node_name] = std::make_shared<cactus_rt::tracing::ThreadTracer>(request->node_name.c_str());;
+        // Register Tracer
+        auto now = cactus_rt::NowNs();
+        nodes_tracer_[request->node_name]->StartSpan("component_manager", nullptr, now);
+        for(int i = 0; i < 100000; i++){}
+        nodes_tracer_[request->node_name]->EndSpan(cactus_rt::NowNs());
+        // Create node
+        RCLCPP_WARN(get_logger(), "Component manager (%s) count: [%ld] memmory: [%p]",  
+          request->node_name.c_str(),
+          nodes_tracer_[request->node_name].use_count(),  
+          (void *)nodes_tracer_[request->node_name].get());
+
+        node_wrappers_[node_id] = factory->create_node_instance(options, nodes_tracer_[request->node_name]);
+
+        trace_aggregator_->RegisterThreadTracer(nodes_tracer_[request->node_name]);
+
+        RCLCPP_WARN(get_logger(), "Component manager (%s) count: [%ld] memmory: [%p]",  
+          request->node_name.c_str(),
+          nodes_tracer_[request->node_name].use_count(), 
+          (void *)nodes_tracer_[request->node_name].get());
+        // }else{
+        //   // Create node
+        //   node_wrappers_[node_id] = factory->create_node_instance(options, nullptr);
+        // }
       } catch (const std::exception & ex) {
         // In the case that the component constructor throws an exception,
         // rethrow into the following catch block.

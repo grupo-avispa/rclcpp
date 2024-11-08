@@ -43,18 +43,20 @@ public:
    */
   NodeInstanceWrapper
   create_node_instance(const rclcpp::NodeOptions & options, 
-                      std::shared_ptr<cactus_rt::tracing::ThreadTracer> tracer) override
+                      const std::shared_ptr<cactus_rt::tracing::ThreadTracer> & tracer) override
   {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Node instance count: [%ld] memmory: [%p]",  
+          tracer.use_count(),  (void *)tracer.get());
     std::shared_ptr<NodeT> node;
-    if (tracer != nullptr){
-      node = std::make_shared<NodeT>(options, tracer);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), 
-          "Tracer shared_ptr for %s was successfully set !!", node->get_name());
-    }else{
-      node = std::make_shared<NodeT>(options, nullptr);
-      RCLCPP_WARN(rclcpp::get_logger("rclcpp"), 
-          "Tracer shared_ptr for %s was NULL !!", node->get_name());
-    }
+    node = std::make_shared<NodeT>(options, tracer);
+    auto now = cactus_rt::NowNs();
+    tracer->StartSpan("create_node_instance", nullptr, now);
+    for(int i = 0; i < 100000; i++){}
+    tracer->EndSpan(cactus_rt::NowNs());
+    RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Node instance (%s) count: [%ld] memmory: [%p]",  
+          node->get_name(), tracer.use_count(),  (void *)tracer.get());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), 
+        "Tracer for %s was successfully set !!", node->get_name());
     return NodeInstanceWrapper(
       node, std::bind(&NodeT::get_node_base_interface, node));
   }

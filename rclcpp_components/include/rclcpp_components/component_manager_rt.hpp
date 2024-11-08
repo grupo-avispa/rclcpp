@@ -146,7 +146,9 @@ public:
   RCLCPP_COMPONENTS_PUBLIC
   virtual void
   set_executor(const std::weak_ptr<rclcpp::Executor> executor);
-
+  RCLCPP_COMPONENTS_PUBLIC
+  virtual void
+  stop_tracing();
 protected:
   /// Create node options for loaded component
   /**
@@ -273,7 +275,8 @@ protected:
   std::vector<std::string> tracing_node_names_;
   std::string trace_file_path_;
 
-  std::shared_ptr<cactus_rt::tracing::TraceAggregator> trace_aggregator_;
+  std::unique_ptr<cactus_rt::tracing::TraceAggregator> trace_aggregator_;
+  std::map <std::string, std::shared_ptr<cactus_rt::tracing::ThreadTracer>> nodes_tracer_;
   rclcpp::Service<LoadNode>::SharedPtr loadNode_srv_;
   rclcpp::Service<UnloadNode>::SharedPtr unloadNode_srv_;
   rclcpp::Service<ListNodes>::SharedPtr listNodes_srv_;
